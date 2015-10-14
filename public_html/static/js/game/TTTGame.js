@@ -95,47 +95,6 @@ var TTTGame = (function(){
 		this.game.load.audio('jump', 'static/audio/jump.wav');
 		this.game.load.audio('score', 'static/audio/score.wav');
 
-		// This.game.load = instance of Phaser.Loader
-		this.game.load.image('tile_road_1', 'static/img/assets/tile_road_1.png');
-		this.game.load.image('taxi', 'static/img/assets/taxi.png');
-		this.game.load.image('obstacle_1', 'static/img/assets/obstacle_1.png');
-		this.game.load.image('gameover', 'static/img/assets/gameover.png');
-		this.game.load.image('empty', 'static/img/assets/empty.png');
-		this.game.load.image('water', 'static/img/assets/water.png');
-		this.game.load.image('logo', 'static/img/assets/logo.png');
-		this.game.load.image('tapToStart', 'static/img/assets/tapToStart.png');
-		
-		// Building assets
-		this.game.load.image('building_base_1', 'static/img/assets/buildingTiles_124.png'); // Grey
-		this.game.load.image('building_base_2', 'static/img/assets/buildingTiles_107.png'); // Semi-red
-		this.game.load.image('building_base_3', 'static/img/assets/buildingTiles_100.png'); // Green
-		this.game.load.image('building_base_4', 'static/img/assets/buildingTiles_099.png'); // Full red
-
-		this.game.load.image('building_middle_small_brown_1', 'static/img/assets/buildingTiles_047.png'); // window type small
-		this.game.load.image('building_middle_small_brown_2', 'static/img/assets/buildingTiles_038.png'); // window type small
-		this.game.load.image('building_middle_big_brown_1', 'static/img/assets/buildingTiles_000.png'); // window type big
-		this.game.load.image('building_middle_big_brown_2', 'static/img/assets/buildingTiles_007.png'); // window type big
-
-		this.game.load.image('building_middle_small_beige_1', 'static/img/assets/buildingTiles_051.png'); // window type small
-		this.game.load.image('building_middle_small_beige_2', 'static/img/assets/buildingTiles_044.png'); // window type small
-		this.game.load.image('building_middle_big_beige_1', 'static/img/assets/buildingTiles_008.png'); // window type big
-		this.game.load.image('building_middle_big_beige_2', 'static/img/assets/buildingTiles_015.png'); // window type big
-
-		this.game.load.image('building_middle_small_red_1', 'static/img/assets/buildingTiles_054.png'); // window type small
-		this.game.load.image('building_middle_small_red_2', 'static/img/assets/buildingTiles_049.png'); // window type small
-		this.game.load.image('building_middle_big_red_1', 'static/img/assets/buildingTiles_008.png'); // window type big
-		this.game.load.image('building_middle_big_red_2', 'static/img/assets/buildingTiles_015.png'); // window type big
-
-		this.game.load.image('building_middle_small_grey_1', 'static/img/assets/buildingTiles_056.png'); // window type small
-		this.game.load.image('building_middle_small_grey_2', 'static/img/assets/buildingTiles_053.png'); // window type small
-		this.game.load.image('building_middle_big_grey_1', 'static/img/assets/buildingTiles_024.png'); // window type big
-		this.game.load.image('building_middle_big_grey_2', 'static/img/assets/buildingTiles_031.png'); // window type big
-
-		this.game.load.image('green_end', 'static/img/assets/green_end.png');
-		this.game.load.image('green_middle_empty', 'static/img/assets/green_middle_empty.png');
-		this.game.load.image('green_middle_tree', 'static/img/assets/green_middle_tree.png');
-		this.game.load.image('green_start', 'static/img/assets/green_start.png');
-
 		// Atlases
 		this.game.load.atlasJSONArray(
 			'numbers', // key
@@ -146,6 +105,11 @@ var TTTGame = (function(){
 			'playButton', // key
 			'static/img/spritesheets/playButton.png', // spritesheet
 			'static/img/spritesheets/playButton.json'); // atlasJSON
+
+		this.game.load.atlasJSONArray(
+			'gameAssets', // key
+			'static/img/spritesheets/gameAssets.png', // spritesheet
+			'static/img/spritesheets/gameAssets.json'); // atlasJSON
 
 	};
 
@@ -177,7 +141,7 @@ var TTTGame = (function(){
 		
 		var x = GAME_WIDTH / 2;
 		var y = GAME_HEIGHT / 2;
-		this.taxi = new Phaser.Sprite(this.game, x, y, 'taxi');
+		this.taxi = new Phaser.Sprite(this.game, x, y, 'gameAssets', 'taxi');
 		this.taxi.anchor.setTo(0.5, 1.0);
 		this.game.world.addChild(this.taxi);
 
@@ -186,12 +150,12 @@ var TTTGame = (function(){
 		this.counter.x = this.game.world.centerX;
 		this.counter.y = 40;
 
-		this.logo = this.game.add.sprite(0, 0, 'logo');
+		this.logo = this.game.add.sprite(0, 0, 'gameAssets', 'logo');
 		this.logo.anchor.setTo(0.5, 0.5);
 		this.logo.x = this.game.world.centerX;
 		this.logo.y = 100;
 
-		this.tapToStart = this.game.add.sprite(0, 0, 'tapToStart');
+		this.tapToStart = this.game.add.sprite(0, 0, 'gameAssets', 'tapToStart');
 		this.tapToStart.anchor.setTo(0.5, 0.5);
 		this.tapToStart.x = this.game.world.centerX;
 		this.tapToStart.y = this.game.world.height - 60;
@@ -205,7 +169,7 @@ var TTTGame = (function(){
 		x = this.game.world.centerX;
 		y = this.game.world.centerY - 50;
 
-		this.gameOverGraphic = new Phaser.Sprite(this.game, x, y, 'gameover');
+		this.gameOverGraphic = new Phaser.Sprite(this.game, x, y, 'gameAssets', 'gameOver');
 		this.gameOverGraphic.anchor.setTo(0.5, 0.5);
 		this.game.add.existing(this.gameOverGraphic);
 
@@ -420,7 +384,7 @@ var TTTGame = (function(){
 
 	TTTGame.prototype.createTileAtIndex = function(tile, index) {
 
-		var sprite = new Phaser.Sprite(this.game, 0, 0, tile);
+		var sprite = new Phaser.Sprite(this.game, 0, 0, 'gameAssets', tile);
 
 		this.addTileAtIndex(sprite, index);
 
