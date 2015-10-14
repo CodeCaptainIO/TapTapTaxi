@@ -2,6 +2,7 @@ var TTTGame = (function(){
 
 	var ANGLE = 26.55;
 	var TILE_WIDTH = 68;
+	var TILE_HEIGHT = 63;
 	var SPEED = 5;
 	var TAXI_START_X = 30;
 	var JUMP_HEIGHT = 7;
@@ -23,6 +24,8 @@ var TTTGame = (function(){
 		this.roadCount = 0;
 		this.nextObstacleIndex = 0;
 		this.arrObstacles = [];
+		this.nextQueueIndex = 0;
+		this.rightQueue = [];
 
 		// General game variables
 		this.mouseTouchDown = false;
@@ -75,6 +78,12 @@ var TTTGame = (function(){
 		this.game.load.image('taxi', 'static/img/assets/taxi.png');
 		this.game.load.image('obstacle_1', 'static/img/assets/obstacle_1.png');
 		this.game.load.image('gameover', 'static/img/assets/gameover.png');
+		this.game.load.image('empty', 'static/img/assets/empty.png');
+
+		this.game.load.image('green_end', 'static/img/assets/green_end.png');
+		this.game.load.image('green_middle_empty', 'static/img/assets/green_middle_empty.png');
+		this.game.load.image('green_middle_tree', 'static/img/assets/green_middle_tree.png');
+		this.game.load.image('green_start', 'static/img/assets/green_start.png');
 
 		// Atlases
 		this.game.load.atlasJSONArray(
@@ -90,6 +99,17 @@ var TTTGame = (function(){
 	};
 
 	TTTGame.prototype.create = function() {
+
+		var numberOfLayers = 9;
+		var i = 0;
+		while (i < numberOfLayers) {
+			var layer = new Phaser.Sprite(this.game, 0, 0);
+			this.game.add.existing(layer);
+			// arrTiles will now hold layers
+			this.arrTiles.push(layer);
+			i++;
+		}
+
 		// Our assets are available
 		this.generateRoad();
 		
@@ -112,6 +132,39 @@ var TTTGame = (function(){
 		this.game.add.existing(this.gameOverGraphic);
 		
 		this.reset();
+	};
+
+	TTTGame.prototype.generateGreenQueue = function() {
+		var retval = [];
+
+		retval.push('green_start');
+
+		// Random amount of middle tiles
+		var middle = Math.round(Math.random() * 2);
+		var i = 0;
+		while (i <= middle) {
+			retval.push('green_middle_empty');
+			i++;
+		}
+
+		// Random amount of trees
+		var randomAmountOfTrees = Math.round(Math.random() * 2);
+		i = 0;
+		while (i <= randomAmountOfTrees) {
+			retval.push('green_middle_tree');
+			i++;
+		}
+
+		// Add some middle tiles again
+		i = 0;
+		while (i <= middle) {
+			retval.push('green_middle_empty');
+			i++;
+		}
+
+		retval.push('green_end');
+
+		return retval;
 	};
 
 	TTTGame.prototype.calculateTaxiPosition = function() {
@@ -206,6 +259,20 @@ var TTTGame = (function(){
 
 	};
 
+	TTTGame.prototype.rightQueueOrEmpty = function() {
+		var retval = 'empty';
+
+		if (this.rightQueue.length !== 0) {
+			retval = this.rightQueue[0][0];
+			this.rightQueue[0].splice(0, 1);
+			if (this.rightQueue[0].length === 0) {
+				this.rightQueue.splice(0, 1);
+			};
+		};
+
+		return retval;
+	};
+
 	TTTGame.prototype.generateRoad = function() {
 
 		this.roadCount++;
@@ -218,17 +285,29 @@ var TTTGame = (function(){
 			isObstacle = true;
 		};
 
-		//var sprite = this.game.add.sprite(0, 0, 'tile_road_1');
-		var x = this.roadStartPosition.x;
-		var y = this.roadStartPosition.y;
-		var sprite = new Phaser.Sprite(this.game, x, y, tile);
-		sprite.anchor.setTo(0.5, 1.0);
-		this.game.world.addChildAt(sprite, 0);
-		this.arrTiles.push(sprite);
+		this.createTileAtIndex('empty', 3);
+		var sprite = this.createTileAtIndex(tile, 4);
+		this.createTileAtIndex('empty', 5);
+		this.createTileAtIndex(this.rightQueueOrEmpty(), 6);
 		
 		if (isObstacle) {
 			this.arrObstacles.push(sprite);
 		};
+	};
+
+	TTTGame.prototype.createTileAtIndex = function(tile, index) {
+		var middle = 4; // Middle layer
+
+		// < 0 if it's a layer below the middle, > 0 if it's above the middle
+		var offset = index - middle;
+
+		var x = this.roadStartPosition.x;
+		var y = this.roadStartPosition.y + offset * TILE_HEIGHT;
+		var sprite = new Phaser.Sprite(this.game, x, y, tile);
+		sprite.anchor.setTo(0.5, 1.0);
+		this.arrTiles[index].addChildAt(sprite, 0);
+
+		return sprite;
 	};
 
 	TTTGame.prototype.calculatePositionOnRoadWithXPosition = function(xpos) {
@@ -246,14 +325,22 @@ var TTTGame = (function(){
 		var i = this.arrTiles.length - 1;
 
 		while (i >= 0) {
-			var sprite = this.arrTiles[i];
-			// Move the sprite
-			sprite.x -= speed * Math.cos( ANGLE * Math.PI / 180 );
-			sprite.y += speed * Math.sin( ANGLE * Math.PI / 180 );
+			var children = this.arrTiles[i].children;
+			var j = children.length - 1;
 
-			if (sprite.x < -120) {
-				this.arrTiles.splice(i, 1);
-				sprite.destroy();
+			while (j >= 0) {
+
+				var sprite = children[j];
+				// Move the sprite
+				sprite.x -= speed * Math.cos( ANGLE * Math.PI / 180 );
+				sprite.y += speed * Math.sin( ANGLE * Math.PI / 180 );
+
+				if (sprite.x < -120) {
+					this.arrTiles[i].removeChild(sprite);
+					sprite.destroy();
+				}
+
+				j--;
 			}
 
 			i--;
@@ -290,6 +377,14 @@ var TTTGame = (function(){
 		}
 	};
 
+	TTTGame.prototype.generateRightQueue = function() {
+		var minimumOffset = 5;
+		var maximumOffset = 15;
+		var num = Math.random() * (maximumOffset - minimumOffset);
+		this.nextQueueIndex = this.roadCount + Math.round(num) + minimumOffset;
+		this.rightQueue.push(this.generateGreenQueue());
+	};
+
 	TTTGame.prototype.update = function() {
 		// Gets called at 60fps
 
@@ -302,6 +397,10 @@ var TTTGame = (function(){
 				this.touchUp();
 			};
 		}
+
+		if (this.roadCount > this.nextQueueIndex) {
+			this.generateRightQueue();
+		};
 
 		this.numberOfIterations++;
 
