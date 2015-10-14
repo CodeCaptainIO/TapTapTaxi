@@ -33,7 +33,14 @@ var TTTGame = (function(){
 		this.isDead = false;
 		this.gameOverGraphic = undefined;
 		this.counter = undefined;
+		this.logo = undefined;
+		this.tapToStart = undefined;
 		this.scoreCount = 0;
+		this.blackOverlay = undefined;
+		this.btnRestart = undefined;
+		this.sfx = {
+			// fill in create
+		};
 
 		this.arrTiles = [];
 		this.numberOfIterations = 0;
@@ -42,6 +49,10 @@ var TTTGame = (function(){
 			y: GAME_HEIGHT / 2 - 100,
 		};
 	}
+
+	TTTGame.prototype.restart = function() {
+		this.reset();
+	};
 
 	TTTGame.prototype.reset = function() {
 
@@ -70,9 +81,20 @@ var TTTGame = (function(){
 
 		// Sprite visibility
 		this.gameOverGraphic.visible = false;
+		this.counter.visible = false;
+		this.logo.visible = true;
+		this.tapToStart.visible = true;
+		this.blackOverlay.visible = false;
+		this.tapToStart.blinker.startBlinking();
+		this.btnRestart.visible = false;
 	};
 
 	TTTGame.prototype.preload = function() {
+		// SFX
+		this.game.load.audio('hit', 'static/audio/hit.wav');
+		this.game.load.audio('jump', 'static/audio/jump.wav');
+		this.game.load.audio('score', 'static/audio/score.wav');
+
 		// This.game.load = instance of Phaser.Loader
 		this.game.load.image('tile_road_1', 'static/img/assets/tile_road_1.png');
 		this.game.load.image('taxi', 'static/img/assets/taxi.png');
@@ -80,6 +102,8 @@ var TTTGame = (function(){
 		this.game.load.image('gameover', 'static/img/assets/gameover.png');
 		this.game.load.image('empty', 'static/img/assets/empty.png');
 		this.game.load.image('water', 'static/img/assets/water.png');
+		this.game.load.image('logo', 'static/img/assets/logo.png');
+		this.game.load.image('tapToStart', 'static/img/assets/tapToStart.png');
 		
 		// Building assets
 		this.game.load.image('building_base_1', 'static/img/assets/buildingTiles_124.png'); // Grey
@@ -118,6 +142,11 @@ var TTTGame = (function(){
 			'static/img/spritesheets/numbers.png', // spritesheet
 			'static/img/spritesheets/numbers.json'); // atlasJSON
 
+		this.game.load.atlasJSONArray(
+			'playButton', // key
+			'static/img/spritesheets/playButton.png', // spritesheet
+			'static/img/spritesheets/playButton.json'); // atlasJSON
+
 	};
 
 	TTTGame.prototype.init = function() {
@@ -126,6 +155,12 @@ var TTTGame = (function(){
 	};
 
 	TTTGame.prototype.create = function() {
+
+		this.sfx = {
+			hit: this.game.add.audio('hit'),
+			jump: this.game.add.audio('jump'),
+			score: this.game.add.audio('score')
+		};
 
 		var numberOfLayers = 9;
 		var i = 0;
@@ -151,14 +186,64 @@ var TTTGame = (function(){
 		this.counter.x = this.game.world.centerX;
 		this.counter.y = 40;
 
+		this.logo = this.game.add.sprite(0, 0, 'logo');
+		this.logo.anchor.setTo(0.5, 0.5);
+		this.logo.x = this.game.world.centerX;
+		this.logo.y = 100;
+
+		this.tapToStart = this.game.add.sprite(0, 0, 'tapToStart');
+		this.tapToStart.anchor.setTo(0.5, 0.5);
+		this.tapToStart.x = this.game.world.centerX;
+		this.tapToStart.y = this.game.world.height - 60;
+		this.tapToStart.blinker = new TTTBlinker(this.game, this.tapToStart);
+
+		this.blackOverlay = this.game.add.graphics(0, 0);
+		this.blackOverlay.beginFill(0x000000, 1);
+		this.blackOverlay.drawRect(0, 0, this.game.world.width, this.game.world.height);
+		this.blackOverlay.endFill();
+
 		x = this.game.world.centerX;
-		y = this.game.world.centerY;
+		y = this.game.world.centerY - 50;
 
 		this.gameOverGraphic = new Phaser.Sprite(this.game, x, y, 'gameover');
 		this.gameOverGraphic.anchor.setTo(0.5, 0.5);
 		this.game.add.existing(this.gameOverGraphic);
+
+		this.btnRestart = new Phaser.Button(
+			this.game,
+			0,
+			0,
+			'playButton',
+			this.restart, // Event handler
+			this, // context
+			'default',
+			'default',
+			'hover',
+			'default'
+		);
+		this.game.add.existing(this.btnRestart);
+		this.btnRestart.inputEnabled = true;
+		this.btnRestart.input.useHandCursor = false;
+		this.btnRestart.anchor.setTo(0.5, 0.5);
+		this.btnRestart.x = this.game.world.centerX;
+		this.btnRestart.y = this.gameOverGraphic.y + this.gameOverGraphic.height / 2 + 50;
 		
 		this.reset();
+		this.generateLevel();
+	};
+
+	TTTGame.prototype.generateLevel = function() {
+		var i = 0;
+		// Calculate how many tiles fit on screen
+		var numberOfTiles = Math.ceil( this.game.world.width / TILE_WIDTH ) + 2;
+		while (i <= numberOfTiles) {
+			this.generateRoad();
+			if (i != numberOfTiles) {
+				// Move the tiles by TILE_WIDTH
+				this.moveTilesWithSpeed(TILE_WIDTH);
+			};
+			i++;
+		}
 	};
 
 	TTTGame.prototype.generateGreenQueue = function() {
@@ -230,6 +315,7 @@ var TTTGame = (function(){
 			if (sprite.x < this.taxi.x - 10) {
 				this.arrObstacles.splice(i, 1);
 				// Taxi jumped over the obstacle
+				this.sfx.score.play();
 				this.scoreCount++;
 				this.counter.setScore(this.scoreCount, true);
 			}
@@ -256,6 +342,11 @@ var TTTGame = (function(){
 
 	TTTGame.prototype.gameOver = function() {
 
+		this.sfx.hit.play();
+
+		this.blackOverlay.alpha = 0.6;
+		this.blackOverlay.visible = true;
+		this.btnRestart.visible = true;
 		this.gameOverGraphic.visible = true;
 
 		this.isDead = true;
@@ -387,20 +478,28 @@ var TTTGame = (function(){
 		}
 	};
 
+	TTTGame.prototype.startGame = function() {
+		this.hasStarted = true;
+		this.logo.visible = false;
+		this.counter.visible = true;
+		this.tapToStart.visible = false;
+		this.tapToStart.blinker.stopBlinking();
+	};
+
 	TTTGame.prototype.touchDown = function() {
 		this.mouseTouchDown = true;
 
 		if (this.isDead) {
-			this.reset();
 			return;
 		};
 
 		if (!this.hasStarted) {
-			this.hasStarted = true;
+			this.startGame();
 		};
 
 		if (!this.isJumping) {
 			this.isJumping = true;
+			this.sfx.jump.play();
 		}
 	};
 
