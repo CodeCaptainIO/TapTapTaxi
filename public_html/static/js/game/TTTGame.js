@@ -12,6 +12,7 @@ var TTTGame = (function(){
 		// Taxi variables
 		this.taxi = undefined;
 		this.taxiX = TAXI_START_X;
+		this.taxiTargetX = 0;
 
 		// Taxi jump variables
 		this.jumpSpeed = JUMP_HEIGHT;
@@ -28,6 +29,8 @@ var TTTGame = (function(){
 		this.hasStarted = false;
 		this.isDead = false;
 		this.gameOverGraphic = undefined;
+		this.counter = undefined;
+		this.scoreCount = 0;
 
 		this.arrTiles = [];
 		this.numberOfIterations = 0;
@@ -38,6 +41,10 @@ var TTTGame = (function(){
 	}
 
 	TTTGame.prototype.reset = function() {
+
+		this.scoreCount = 0;
+		this.counter.setScore(0, false);
+
 		// General game variables
 		this.mouseTouchDown = false;
 		this.hasStarted = false;
@@ -56,6 +63,7 @@ var TTTGame = (function(){
 		this.game.tweens.removeFrom(this.taxi);
 		this.taxiX = TAXI_START_X;
 		this.taxi.rotation = 0;
+		this.taxiTargetX = 0;
 
 		// Sprite visibility
 		this.gameOverGraphic.visible = false;
@@ -67,6 +75,13 @@ var TTTGame = (function(){
 		this.game.load.image('taxi', 'static/img/assets/taxi.png');
 		this.game.load.image('obstacle_1', 'static/img/assets/obstacle_1.png');
 		this.game.load.image('gameover', 'static/img/assets/gameover.png');
+
+		// Atlases
+		this.game.load.atlasJSONArray(
+			'numbers', // key
+			'static/img/spritesheets/numbers.png', // spritesheet
+			'static/img/spritesheets/numbers.json'); // atlasJSON
+
 	};
 
 	TTTGame.prototype.init = function() {
@@ -84,6 +99,11 @@ var TTTGame = (function(){
 		this.taxi.anchor.setTo(0.5, 1.0);
 		this.game.world.addChild(this.taxi);
 
+		this.counter = new TTTCounter(this.game, 0, 0);
+		this.game.add.existing(this.counter);
+		this.counter.x = this.game.world.centerX;
+		this.counter.y = 40;
+
 		x = this.game.world.centerX;
 		y = this.game.world.centerY;
 
@@ -92,6 +112,26 @@ var TTTGame = (function(){
 		this.game.add.existing(this.gameOverGraphic);
 		
 		this.reset();
+	};
+
+	TTTGame.prototype.calculateTaxiPosition = function() {
+		
+		var multiplier = 0.025;
+		var num = TAXI_START_X + (this.scoreCount * GAME_WIDTH * multiplier);
+
+		// Limit it to 60% of the game width
+		if (num > GAME_WIDTH * 0.60) {
+			num = GAME_WIDTH * 0.60;
+		};
+
+		this.taxiTargetX = num;
+
+		// Gradually increase taxiX to approach taxiTargetX
+		if (this.taxiX < this.taxiTargetX) {
+			var easing = 15;
+			this.taxiX += (this.taxiTargetX - this.taxiX) / easing;
+		};
+
 	};
 
 	TTTGame.prototype.calculateNextObstacleIndex = function() {
@@ -109,6 +149,9 @@ var TTTGame = (function(){
 
 			if (sprite.x < this.taxi.x - 10) {
 				this.arrObstacles.splice(i, 1);
+				// Taxi jumped over the obstacle
+				this.scoreCount++;
+				this.counter.setScore(this.scoreCount, true);
 			}
 
 			// Distance formula
@@ -271,6 +314,8 @@ var TTTGame = (function(){
 			if (this.isJumping) {
 				this.taxiJump();
 			}
+
+			this.calculateTaxiPosition();
 
 			var pointOnRoad = this.calculatePositionOnRoadWithXPosition(this.taxiX);
 			this.taxi.x = pointOnRoad.x;
