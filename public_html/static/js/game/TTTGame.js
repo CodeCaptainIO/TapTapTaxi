@@ -79,6 +79,33 @@ var TTTGame = (function(){
 		this.game.load.image('obstacle_1', 'static/img/assets/obstacle_1.png');
 		this.game.load.image('gameover', 'static/img/assets/gameover.png');
 		this.game.load.image('empty', 'static/img/assets/empty.png');
+		this.game.load.image('water', 'static/img/assets/water.png');
+		
+		// Building assets
+		this.game.load.image('building_base_1', 'static/img/assets/buildingTiles_124.png'); // Grey
+		this.game.load.image('building_base_2', 'static/img/assets/buildingTiles_107.png'); // Semi-red
+		this.game.load.image('building_base_3', 'static/img/assets/buildingTiles_100.png'); // Green
+		this.game.load.image('building_base_4', 'static/img/assets/buildingTiles_099.png'); // Full red
+
+		this.game.load.image('building_middle_small_brown_1', 'static/img/assets/buildingTiles_047.png'); // window type small
+		this.game.load.image('building_middle_small_brown_2', 'static/img/assets/buildingTiles_038.png'); // window type small
+		this.game.load.image('building_middle_big_brown_1', 'static/img/assets/buildingTiles_000.png'); // window type big
+		this.game.load.image('building_middle_big_brown_2', 'static/img/assets/buildingTiles_007.png'); // window type big
+
+		this.game.load.image('building_middle_small_beige_1', 'static/img/assets/buildingTiles_051.png'); // window type small
+		this.game.load.image('building_middle_small_beige_2', 'static/img/assets/buildingTiles_044.png'); // window type small
+		this.game.load.image('building_middle_big_beige_1', 'static/img/assets/buildingTiles_008.png'); // window type big
+		this.game.load.image('building_middle_big_beige_2', 'static/img/assets/buildingTiles_015.png'); // window type big
+
+		this.game.load.image('building_middle_small_red_1', 'static/img/assets/buildingTiles_054.png'); // window type small
+		this.game.load.image('building_middle_small_red_2', 'static/img/assets/buildingTiles_049.png'); // window type small
+		this.game.load.image('building_middle_big_red_1', 'static/img/assets/buildingTiles_008.png'); // window type big
+		this.game.load.image('building_middle_big_red_2', 'static/img/assets/buildingTiles_015.png'); // window type big
+
+		this.game.load.image('building_middle_small_grey_1', 'static/img/assets/buildingTiles_056.png'); // window type small
+		this.game.load.image('building_middle_small_grey_2', 'static/img/assets/buildingTiles_053.png'); // window type small
+		this.game.load.image('building_middle_big_grey_1', 'static/img/assets/buildingTiles_024.png'); // window type big
+		this.game.load.image('building_middle_big_grey_2', 'static/img/assets/buildingTiles_031.png'); // window type big
 
 		this.game.load.image('green_end', 'static/img/assets/green_end.png');
 		this.game.load.image('green_middle_empty', 'static/img/assets/green_middle_empty.png');
@@ -285,10 +312,15 @@ var TTTGame = (function(){
 			isObstacle = true;
 		};
 
-		this.createTileAtIndex('empty', 3);
+		this.addTileAtIndex(new TTTBuilding(this.game, 0, 0), 0);
+		this.createTileAtIndex('tile_road_1', 1);
+		this.createTileAtIndex('empty', 2);
+		this.addTileAtIndex(new TTTBuilding(this.game, 0, 0), 3);
 		var sprite = this.createTileAtIndex(tile, 4);
 		this.createTileAtIndex('empty', 5);
 		this.createTileAtIndex(this.rightQueueOrEmpty(), 6);
+		this.createTileAtIndex('empty', 7);
+		this.createTileAtIndex('water', 8);
 		
 		if (isObstacle) {
 			this.arrObstacles.push(sprite);
@@ -296,6 +328,16 @@ var TTTGame = (function(){
 	};
 
 	TTTGame.prototype.createTileAtIndex = function(tile, index) {
+
+		var sprite = new Phaser.Sprite(this.game, 0, 0, tile);
+
+		this.addTileAtIndex(sprite, index);
+
+		return sprite;
+	};
+
+	TTTGame.prototype.addTileAtIndex = function(sprite, index) {
+		sprite.anchor.setTo(0.5, 1.0);
 		var middle = 4; // Middle layer
 
 		// < 0 if it's a layer below the middle, > 0 if it's above the middle
@@ -303,11 +345,9 @@ var TTTGame = (function(){
 
 		var x = this.roadStartPosition.x;
 		var y = this.roadStartPosition.y + offset * TILE_HEIGHT;
-		var sprite = new Phaser.Sprite(this.game, x, y, tile);
-		sprite.anchor.setTo(0.5, 1.0);
+		sprite.x = x;
+		sprite.y = y;
 		this.arrTiles[index].addChildAt(sprite, 0);
-
-		return sprite;
 	};
 
 	TTTGame.prototype.calculatePositionOnRoadWithXPosition = function(xpos) {
